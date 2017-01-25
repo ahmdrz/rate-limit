@@ -12,6 +12,8 @@ type Request struct {
 }
 
 type RateLimiter struct {
+	IsUsingProxy   bool
+	ValidateByURI  bool
 	requests       int
 	addresses      map[string]Request
 	blockedHandler http.HandlerFunc

@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-var IsUsingProxy = false
-
 var DefaultHandler = func(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(429)
 }
@@ -17,6 +15,8 @@ func InitRateLimit(requests int, limitTime time.Duration, blockedHandler http.Ha
 		addresses:      make(map[string]Request),
 		blockedHandler: blockedHandler,
 		timeLimit:      limitTime,
+		ValidateByURI:  true,
+		IsUsingProxy:   false,
 	}
 	go ratelimiter.reduceTheLimits()
 	return ratelimiter
@@ -24,39 +24,38 @@ func InitRateLimit(requests int, limitTime time.Duration, blockedHandler http.Ha
 
 func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if IsUsingProxy {
-			if rl.exceededTheLimit(r.RemoteAddr + r.RequestURI) {
-				rl.blockedHandler.ServeHTTP(w, r)
-			} else {
-				h.ServeHTTP(w, r)
-			}
+		remoteIP := r.RemoteAddr
+		if rl.IsUsingProxy {
+			remoteIP = r.Header.Get("REMOTE_ADDR")
+		}
+		if rl.ValidateByURI {
+			remoteIP += r.RequestURI
+		}
+		if rl.exceededTheLimit(r.RemoteAddr + r.RequestURI) {
+			rl.blockedHandler.ServeHTTP(w, r)
 		} else {
-			if rl.exceededTheLimit(r.Header.Get("REMOTE_ADDR") + r.RequestURI) {
-				rl.blockedHandler.ServeHTTP(w, r)
-			} else {
-				h.ServeHTTP(w, r)
-			}
+			h.ServeHTTP(w, r)
 		}
 	}
 }
 
-func (r *RateLimiter) reduceTheLimits() {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-	for key, value := range r.addresses {
-		if value.Time < time.Now().Unix()-int64(r.timeLimit.Seconds()) {
-			delete(r.addresses, key)
+func (rl *RateLimiter) reduceTheLimits() {
+	rl.mux.Lock()
+	defer rl.mux.Unlock()
+	for key, value := range rl.addresses {
+		if value.Time < time.Now().Unix()-int64(rl.timeLimit.Seconds()) {
+			delete(rl.addresses, key)
 		}
 	}
-	time.AfterFunc(r.timeLimit, r.reduceTheLimits)
+	time.AfterFunc(rl.timeLimit, rl.reduceTheLimits)
 }
 
-func (r *RateLimiter) exceededTheLimit(remoteIP string) bool {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-	req := r.addresses[remoteIP]
+func (rl *RateLimiter) exceededTheLimit(remoteIP string) bool {
+	rl.mux.Lock()
+	defer rl.mux.Unlock()
+	req := rl.addresses[remoteIP]
 	req.Count++
 	req.Time = time.Now().Unix()
-	r.addresses[remoteIP] = req
-	return req.Count > r.requests
+	rl.addresses[remoteIP] = req
+	return req.Count > rl.requests
 }
