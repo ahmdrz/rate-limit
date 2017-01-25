@@ -1,9 +1,3 @@
-# rate-limit
-Very simple rate limiter for HTTP requests
-
-### How to use ?
-
-```go
 package main
 
 import (
@@ -23,6 +17,3 @@ func main() {
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello world"))
 }
-```
-
-*NOTE* : If you are using Proxy , set the IsUsingProxy to True for getting correct address in ratelimit function.
