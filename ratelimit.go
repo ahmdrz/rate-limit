@@ -25,13 +25,13 @@ func InitRateLimit(requests int, limitTime time.Duration, blockedHandler http.Ha
 func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if IsUsingProxy {
-			if rl.exceededTheLimit(r.RemoteAddr) {
+			if rl.exceededTheLimit(r.RemoteAddr + r.RequestURI) {
 				rl.blockedHandler.ServeHTTP(w, r)
 			} else {
 				h.ServeHTTP(w, r)
 			}
 		} else {
-			if rl.exceededTheLimit(r.Header.Get("REMOTE_ADDR")) {
+			if rl.exceededTheLimit(r.Header.Get("REMOTE_ADDR") + r.RequestURI) {
 				rl.blockedHandler.ServeHTTP(w, r)
 			} else {
 				h.ServeHTTP(w, r)
