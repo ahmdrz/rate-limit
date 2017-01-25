@@ -1,7 +1,6 @@
 package ratelimit
 
 import (
-	"log"
 	"net/http"
 	"time"
 )
@@ -58,7 +57,6 @@ func (r *RateLimiter) exceededTheLimit(remoteIP string) bool {
 	req := r.addresses[remoteIP]
 	req.Count++
 	req.Time = time.Now().Unix()
-	log.Println(req)
 	r.addresses[remoteIP] = req
 	return req.Count > r.requests
 }

@@ -25,4 +25,4 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-*NOTE* : If you are using Proxy , set the IsUsingProxy to True for getting correct address in ratelimit function.
+*NOTE* : If you are using Proxy , set the `IsUsingProxy` to `True` for getting correct IP address in ratelimit function.
