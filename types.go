@@ -20,3 +20,8 @@ type RateLimiter struct {
 	mux            sync.Mutex
 	timeLimit      time.Duration
 }
+
+type HandlerLimiter struct {
+	RateLimiter
+	http.Handler
+}
