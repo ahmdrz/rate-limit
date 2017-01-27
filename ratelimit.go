@@ -59,7 +59,7 @@ func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 		if rl.ValidateByURI {
 			remoteIP += r.RequestURI
 		}
-		if rl.exceededTheLimit(r.RemoteAddr + r.RequestURI) {
+		if rl.exceededTheLimit(remoteIP) {			
 			rl.blockedHandler.ServeHTTP(w, r)
 		} else {
 			h.ServeHTTP(w, r)
