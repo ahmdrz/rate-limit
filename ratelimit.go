@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -30,7 +31,7 @@ func (h *HandlerLimiter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.ValidateByURI {
 		remoteIP += r.RequestURI
 	}
-	if h.exceededTheLimit(r.RemoteAddr + r.RequestURI) {
+	if h.exceededTheLimit(r.RemoteAddr, r.RequestURI) {
 		h.blockedHandler.ServeHTTP(w, r)
 	} else {
 		h.Handler.ServeHTTP(w, r)
@@ -59,7 +60,7 @@ func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 		if rl.ValidateByURI {
 			remoteIP += r.RequestURI
 		}
-		if rl.exceededTheLimit(remoteIP) {			
+		if rl.exceededTheLimit(remoteIP, r.RequestURI) {
 			rl.blockedHandler.ServeHTTP(w, r)
 		} else {
 			h.ServeHTTP(w, r)
@@ -78,9 +79,20 @@ func (rl *RateLimiter) reduceTheLimits() {
 	time.AfterFunc(rl.timeLimit, rl.reduceTheLimits)
 }
 
-func (rl *RateLimiter) exceededTheLimit(remoteIP string) bool {
+func (rl *RateLimiter) exceededTheLimit(remoteIP string, uri string) bool {
 	rl.mux.Lock()
 	defer rl.mux.Unlock()
+	for key, value := range WhiteList {
+		if value {
+			if key == uri {
+				return false
+			}
+		} else {
+			if strings.HasPrefix(uri, key) {
+				return false
+			}
+		}
+	}
 	req := rl.addresses[remoteIP]
 	req.Count++
 	req.Time = time.Now().Unix()

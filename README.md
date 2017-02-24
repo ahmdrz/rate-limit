@@ -55,3 +55,14 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 ```
 
 *NOTE* : If you are using Proxy , set the `IsUsingProxy` to `True` for getting correct IP address in ratelimit function.
+
+You can use `WhiteList` :
+
+```go
+   ratelimit.WhiteList.Add("/index")
+   ratelimit.WhiteList.HasPrefix("/images")
+```
+
+And ratelimit will skip whitelist URIs.
+
+**NOTE** WhiteList operation such as Add and etc is not thread safe.
